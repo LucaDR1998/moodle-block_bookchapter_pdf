@@ -1,0 +1,101 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_bookchapter_pdf/export_form
+
+    Template for exporting chapters to PDF.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * actionurl - URL to which the form is submitted
+    * fields - array of objects representing chapters
+      * name - string, the name attribute of the checkbox
+      * label - string, the label of the chapter
+      * checked - string, "checked" if the checkbox should be pre-checked
+    * toggleButtonText - string, text for the toggle selection button
+    * backtocourseurl - string, URL to navigate back to the course
+
+    Example context (json):
+    {
+        "actionurl": "http://example.com/export.php",
+        "fields": [
+            {
+                "name": "chapter_1",
+                "label": "chapter 1",
+                "checked": "checked"
+            },
+            {
+                "name": "chapter_2",
+                "label": "chapter 2",
+                "checked": ""
+            }
+        ],
+        "toggleButtonText": "Select all",
+        "backtocourseurl": "http://example.com/course/view.php?id=1"
+    }
+}}
+
+<form method="post" action="{{actionurl}}" class="export-pdf-form">
+     <div class="table-responsive">
+        <table class="table">
+            <tbody>
+                {{#fields}}
+                <!-- Assumiamo che ogni elemento in 'fields' sia una lezione con la sua checkbox -->
+                <tr class="group-header">
+                    <td>
+                        <input type="checkbox" id="{{name}}" name="{{name}}" value="1" {{checked}}>
+                    </td>
+                    <td>
+                        <strong>{{label}}</strong>
+                    </td>
+                </tr>
+                {{/fields}}
+            </tbody>
+        </table>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="toggleCheckboxes(this)">{{toggleButtonText}}</button>
+        <button type="submit" class="btn btn-primary">Export selected</button>
+        <button type="button" class="btn btn-secondary" onclick="window.location.href='{{backtocourseurl}}'">Back to course</button>
+    </div>
+</form>
+
+<script>
+function toggleCheckboxes(button) {
+    var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+    // Controlla se tutte le checkbox sono selezionate prima della modifica
+    var allCheckedBeforeClick = Array.from(checkboxes).every(checkbox => checkbox.checked);
+    
+    // Modifica lo stato delle checkbox in base allo stato determinato precedentemente
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = !allCheckedBeforeClick;
+    });
+    
+    // Dopo aver cambiato lo stato delle checkbox, determina il loro nuovo stato complessivo
+    var allCheckedAfterClick = Array.from(checkboxes).every(checkbox => checkbox.checked);
+    
+    // Aggiorna il testo del pulsante in base al nuovo stato complessivo delle checkbox
+    button.textContent = allCheckedAfterClick ? 'Deselect all' : 'Select all';
+}
+
+</script>
