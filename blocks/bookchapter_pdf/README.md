@@ -40,7 +40,7 @@ to complete the installation from the command line.
 
 ## License ##
 
-2024 Luca Demicheli Rubio <luca@telehealth.org>
+2024 Luca Demicheli Rubio <lucademichelirubio.portfolio@gmail.com>
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
