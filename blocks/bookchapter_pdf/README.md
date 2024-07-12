@@ -27,7 +27,7 @@ With the Export Book Chapters Block, managing and distributing course book conte
 
 The plugin can be also installed by putting the contents of this directory to
 
-    {your/moodle/dirroot}/blocks/exportpdf
+    {your/moodle/dirroot}/blocks/bookchapter_pdf
 
 Afterwards, log in to your Moodle site as an admin and go to _Site administration >
 Notifications_ to complete the installation.
