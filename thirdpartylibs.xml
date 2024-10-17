@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<libraries>
+    <library>
+        <name>mPDF</name>
+        <version>^8.2.1</version>
+        <license>GPL-2.0-only</license>
+        <licenseurl>https://opensource.org/licenses/GPL-2.0</licenseurl>
+        <origin>https://mpdf.github.io</origin>
+        <localpath>/vendor/mpdf/mpdf</localpath>
+    </library>
+    <library>
+        <name>psr/http-message</name>
+        <version>^1.0 || ^2.0</version>
+        <license>MIT</license>
+        <licenseurl>https://opensource.org/licenses/MIT</licenseurl>
+        <origin>https://github.com/php-fig/http-message</origin>
+        <localpath>/vendor/psr/http-message</localpath>
+    </library>
+    <library>
+        <name>psr/log</name>
+        <version>^1.0 || ^2.0 || ^3.0</version>
+        <license>MIT</license>
+        <licenseurl>https://opensource.org/licenses/MIT</licenseurl>
+        <origin>https://github.com/php-fig/log</origin>
+        <localpath>/vendor/psr/log</localpath>
+    </library>
+    <library>
+        <name>myclabs/deep-copy</name>
+        <version>^1.7</version>
+        <license>MIT</license>
+        <licenseurl>https://opensource.org/licenses/MIT</licenseurl>
+        <origin>https://github.com/myclabs/DeepCopy</origin>
+        <localpath>/vendor/myclabs/deep-copy</localpath>
+    </library>
+    <library>
+        <name>paragonie/random_compat</name>
+        <version>^1.4|^2.0|^9.99.99</version>
+        <license>MIT</license>
+        <licenseurl>https://opensource.org/licenses/MIT</licenseurl>
+        <origin>https://github.com/paragonie/random_compat</origin>
+        <localpath>/vendor/paragonie/random_compat</localpath>
+    </library>
+    <library>
+        <name>setasign/fpdi</name>
+        <version>^2.1</version>
+        <license>MIT</license>
+        <licenseurl>https://opensource.org/licenses/MIT</licenseurl>
+        <origin>https://github.com/Setasign/FPDI</origin>
+        <localpath>/vendor/setasign/fpdi</localpath>
+    </library>
+</libraries>

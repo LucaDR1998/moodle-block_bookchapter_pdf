@@ -43,34 +43,48 @@ require_once($CFG->libdir.'/pdflib.php');
  */
 function process_and_find_chapterskey_for_course($courseid, moodle_database $DB) {
 
+    // Fetch the chapter prefix setting from the block configuration.
     $chapterprefix = get_config('block_bookchapter_pdf', 'chapterprefix');
-
     $grouped = [];
+    $params = array('course' => $courseid);
 
-     // Prepara i parametri per la query
-     $params = array('course' => $courseid);
-
-     // Costruisce la query SQL in base alla presenza del prefisso
+    // Build the SQL query based on the presence of a chapter prefix.
     if (!empty($chapterprefix)) {
+        // Build the SQL LIKE condition to filter books by their name if the chapter prefix is provided.
         $like = $DB->sql_like('name', ':prefix', false, false);
         $params['prefix'] = "%{$chapterprefix}%";
         $sql = "course = :course AND $like";
     } else {
+        // If no prefix is provided, fetch all books for the course.
         $sql = "course = :course";
     }
-    // Esegui la query selezionando i libri in base al corso e al prefisso del nome (se presente)
+    // Execute the query to select books based on the course and optionally the chapter prefix.
     $chapterskey = $DB->get_records_select('book', $sql, $params);
+    // Get fast information about all modules in the course.
+    $modinfo = get_fast_modinfo($courseid);
 
+    // Iterate through each selected book.
     foreach ($chapterskey as $chapter) {
-        // Recupera i capitoli per ciascun libro selezionato
+
+        // Fetch the course module information for the book to check visibility and restrictions.
+        $cm = $modinfo->get_cm($chapter->cmid);
+
+        // Security check: Ensure the book is visible to the user and not restricted or hidden.
+        if (!$cm->uservisible) {
+            // Skip this book if it's hidden or access is restricted.
+            continue;
+        }
+
+        // Fetch the chapters for the selected book, excluding hidden chapters.
         $chapters = $DB->get_records_select('book_chapters', "bookid = ? AND hidden = 0", [$chapter->id], 'pagenum ASC', 'id, title, content, subchapter');
 
-        // Aggiungi il libro e i suoi capitoli all'array per l'esportazione/visualizzazione
+        // Add the book and its chapters to the grouped array for export/display.
         $grouped[$chapter->name] = [
             'id' => $chapter->id,
-            'chapters' => array_values($chapters) // Converti in array numerico per facilitare l'esportazione/visualizzazione
+            'chapters' => array_values($chapters) // Convert chapters to a numeric array for easier export/display.
         ];
     }
+
     return $grouped;
 }
 
