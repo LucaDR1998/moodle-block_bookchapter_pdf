@@ -86,6 +86,10 @@ if (data_submitted()) {
 
         foreach ($groupedchapters as $bookprefix => $book) {
 
+            if (!array_key_exists('book_' . $book['id'], $selectedbooks)) {
+                continue; // skip book not selected
+            }
+
             // Export each book and its chapters directly
             $mpdf = new Mpdf([
                 'margin_left' => PDF_MARGIN_LEFT,
