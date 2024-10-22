@@ -49,11 +49,11 @@ class block_bookchapter_pdf extends block_base {
     }
 
     public function has_add_block_capability($context, $caps) {
-        // Se siamo nel contesto di un corso, controlla solo 'addinstance'
+        // If we are in the context of a course, check only 'addinstance'
         if ($context->contextlevel == CONTEXT_COURSE) {
             return has_any_capability($caps, $context);
         }
-        // Altrimenti, non permettere l'aggiunta del blocco
+        // Otherwise, do not allow the block to be added
         return false;
     }
 

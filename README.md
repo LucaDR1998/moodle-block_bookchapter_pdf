@@ -14,13 +14,6 @@ This block is especially useful for courses with extensive book content, allowin
 ## Chapter Prefix Explained:
 The **Chapter Prefix** feature allows course administrators or teachers to filter book chapters by a keyword. For example, if you set the prefix to "Unit 1", only chapters that start with "Unit 1" in the title will be exported. If no prefix is specified, the entire book will be available for export.
 
-## Installation and Configuration:
-1. **Installation**: Install the plugin through the Moodle plugin installer or manually by placing the block's directory in `{your/moodle/dirroot}/blocks/bookchapter_pdf` and completing the installation process.
-2. **Configuration**: After adding the block to your course, configure it by specifying a Chapter Prefix if desired. Leave the prefix empty to allow full book downloads.
-3. **Usage**: Users can click the download button to get a ZIP file containing the filtered or full book chapters in PDF format.
-
-With the Export Book Chapters Block, managing and distributing course book content has never been easier. Simplify your course material downloads and enhance the learning experience for your students with this essential Moodle plugin.
-
 ## Installing via uploaded ZIP file ##
 
 1. Log in to your Moodle site as an admin and go to _Site administration >

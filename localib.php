@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * TODO describe file localib
+ * File localib
  *
  * @package    block_bookchapter_pdf
  * @copyright  2024 Luca <lucademichelirubio@gmail.com>
@@ -43,48 +43,40 @@ require_once($CFG->libdir.'/pdflib.php');
  */
 function process_and_find_chapterskey_for_course($courseid, moodle_database $DB) {
 
-    // Fetch the chapter prefix setting from the block configuration.
     $chapterprefix = get_config('block_bookchapter_pdf', 'chapterprefix');
     $grouped = [];
     $params = array('course' => $courseid);
 
-    // Build the SQL query based on the presence of a chapter prefix.
+    // Builds the SQL query based on the presence of the prefix
     if (!empty($chapterprefix)) {
-        // Build the SQL LIKE condition to filter books by their name if the chapter prefix is provided.
-        $like = $DB->sql_like('name', ':prefix', false, false);
+        $like = $DB->sql_like('b.name', ':prefix', false, false);
         $params['prefix'] = "%{$chapterprefix}%";
-        $sql = "course = :course AND $like";
+        $sql = "b.course = :course AND $like AND cm.visible = 1";
     } else {
-        // If no prefix is provided, fetch all books for the course.
-        $sql = "course = :course";
+        $sql = "b.course = :course AND cm.visible = 1";
     }
-    // Execute the query to select books based on the course and optionally the chapter prefix.
-    $chapterskey = $DB->get_records_select('book', $sql, $params);
-    // Get fast information about all modules in the course.
-    $modinfo = get_fast_modinfo($courseid);
+    // Join the book and course_modules tables to get only visible books
+    $sql = "SELECT b.* FROM {book} b 
+            JOIN {course_modules} cm ON cm.instance = b.id
+            JOIN {modules} m ON m.id = cm.module
+            WHERE m.name = 'book' AND $sql";
+    // Execute the query selecting only visible books based on the course and the name prefix (if present)
+    $books = $DB->get_records_sql($sql, $params);
 
-    // Iterate through each selected book.
-    foreach ($chapterskey as $chapter) {
-
-        // Fetch the course module information for the book to check visibility and restrictions.
-        $cm = $modinfo->get_cm($chapter->cmid);
-
-        // Security check: Ensure the book is visible to the user and not restricted or hidden.
-        if (!$cm->uservisible) {
-            // Skip this book if it's hidden or access is restricted.
+    foreach ($books as $book) {
+        // Retrieve only visible chapters (hidden = 0)
+        $chapters = $DB->get_records_select('book_chapters', "bookid = ? AND hidden = 0", 
+            [$book->id], 'pagenum ASC', 'id, title, content, subchapter');
+        // If there are no visible chapters, skip the book
+        if (empty($chapters)) {
             continue;
         }
-
-        // Fetch the chapters for the selected book, excluding hidden chapters.
-        $chapters = $DB->get_records_select('book_chapters', "bookid = ? AND hidden = 0", [$chapter->id], 'pagenum ASC', 'id, title, content, subchapter');
-
-        // Add the book and its chapters to the grouped array for export/display.
-        $grouped[$chapter->name] = [
-            'id' => $chapter->id,
-            'chapters' => array_values($chapters) // Convert chapters to a numeric array for easier export/display.
+        // Add the book and its chapters to the array for export/display
+        $grouped[$book->name] = [
+            'id' => $book->id,
+            'chapters' => array_values($chapters) // Convert to a numerical array to facilitate export/display
         ];
     }
-
     return $grouped;
 }
 
@@ -105,7 +97,7 @@ function clean_html_for_pdf_export($html) {
 
     $xpath = new DOMXPath($dom);
 
-    // Rimuovi i tag specificati come prima
+    // Remove specific tags
     $tagstoremove = ['script', 'form', 'nav', 'section', 'aside', 'footer', 'svg', 'a', 'figure'];
     foreach ($tagstoremove as $tag) {
         $elems = $xpath->query("//{$tag}");
@@ -114,7 +106,7 @@ function clean_html_for_pdf_export($html) {
         }
     }
 
-    // Aggiungi la rimozione specifica per i link con classi specifiche
+    // Add specific removal for links with specific classes
     $specificlinkstoremove = $xpath->query("//a[contains(@class, 'btn btn-secondary')]");
     foreach ($specificlinkstoremove as $link) {
         $link->parentNode->removeChild($link);
@@ -138,27 +130,26 @@ function image_url($bookid) {
 
     $fs = get_file_storage();
 
-    // Ottieni il contesto del modulo (cm) per il libro
+    // get context module for the book
     $cm = get_coursemodule_from_instance('book', $bookid, 0, false, MUST_EXIST);
     $context = context_module::instance($cm->id);
 
-    // Ottieni tutti i file associati al contesto e all'area file
+    // Get all files associated with the context and the file area
     $files = $fs->get_area_files($context->id, 'mod_book', 'chapter', false, 'itemid, filepath, filename', false);
 
     $imageurls = [];
     foreach ($files as $file) {
         if ($file->get_filename() !== '.') {
-            $itemid = $file->get_itemid(); // Questo rappresenta l'ID del capitolo
-            $url = $CFG->dataroot . '/filedir/' . substr($file->get_contenthash(), 0, 2) . '/' . substr($file->get_contenthash(), 2, 2) . '/' . $file->get_contenthash();
-
-            // Organizza gli URL per itemid (ID del capitolo)
+            $itemid = $file->get_itemid(); // chapter ID
+            $url = $CFG->dataroot . '/filedir/' . substr($file->get_contenthash(), 0, 2) . '/' 
+            . substr($file->get_contenthash(), 2, 2) . '/' . $file->get_contenthash();
+            // Organize the URLs by itemid (chapter ID)
             if (!isset($imageurls[$itemid])) {
                 $imageurls[$itemid] = [];
             }
             $imageurls[$itemid][] = $url;
         }
     }
-
     return $imageurls;
 }
 
@@ -174,7 +165,7 @@ function image_url($bookid) {
 function get_file_mapping_by_filename($bookid) {
     global $CFG, $DB, $USER;
 
-    // Ottieni il contesto del modulo (cm) per il libro
+    // get context module for the book
     $cm = get_coursemodule_from_instance('book', $bookid, 0, false, MUST_EXIST);
     $context = context_module::instance($cm->id);
     $fs = get_file_storage();
@@ -183,24 +174,20 @@ function get_file_mapping_by_filename($bookid) {
     $filemapping = [];
 
     foreach ($files as $file) {
-        // Ignora le directory
+        // Ignore directories
         if ($file->is_directory()) {
             continue;
         }
-
         $filename = $file->get_filename();
-
         $hash = $file->get_contenthash();
-        // Costruire il percorso fisico basato sull'hash, come fatto in image_url
+        // Build the physical path based on the hash, as done in image_url
         $path = $CFG->dataroot . '/filedir/' . substr($hash, 0, 2) . '/' . substr($hash, 2, 2) . '/' . $hash;
-
-        // Aggiungi la mappatura; considera che potrebbero esserci file con lo stesso nome in contesti diversi
+        // Add the mapping; consider that there might be files with the same name in different contexts
         if (!array_key_exists($filename, $filemapping)) {
             $filemapping[$filename] = [];
         }
         $filemapping[$filename][] = $path;
     }
-
     return $filemapping;
 }
 
@@ -216,22 +203,16 @@ function get_file_mapping_by_filename($bookid) {
  * @return string|false The file path of the downloaded image if successful, false otherwise.
  */
 function download_image($url, $tempdir) {
-
-    // print_object($url);
-
     $filename = basename($url);
     $filepath = $tempdir . '/' . $filename;
-    // Utilizza file_get_contents e file_put_contents per scaricare l'immagine
-    // Controlla prima se allow_url_fopen è abilitato
+    // Use file_get_contents and file_put_contents to download the image
+    // First check if allow_url_fopen is enabled
     if (ini_get('allow_url_fopen')) {
         $imagedata = file_get_contents($url);
         if ($imagedata !== false) {
             file_put_contents($filepath, $imagedata);
-            // print_object($filepath);
-            // die;
             return $filepath;
         }
     }
     return false;
 }
-

@@ -55,11 +55,11 @@
 }}
 
 <form method="post" action="{{actionurl}}" class="export-pdf-form">
-     <div class="table-responsive">
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+    <div class="table-responsive">
         <table class="table">
             <tbody>
                 {{#fields}}
-                <!-- Assumiamo che ogni elemento in 'fields' sia una lezione con la sua checkbox -->
                 <tr class="group-header">
                     <td>
                         <input type="checkbox" id="{{name}}" name="{{name}}" value="1" {{checked}}>
@@ -73,29 +73,17 @@
         </table>
     </div>
     <div class="form-actions">
-        <button type="button" class="btn btn-secondary" onclick="toggleCheckboxes(this)">{{toggleButtonText}}</button>
-        <button type="submit" class="btn btn-primary">Export selected</button>
-        <button type="button" class="btn btn-secondary" onclick="window.location.href='{{backtocourseurl}}'">Back to course</button>
+        <button type="button" class="btn btn-secondary" id="toggle-checkboxes">{{toggleButtonText}}</button>
+        <button type="submit" class="btn btn-primary">{{#str}}exportselected, block_bookchapter_pdf{{/str}}</button>
+        <button type="button" class="btn btn-secondary" onclick="window.location.href='{{backtocourseurl}}'">{{#str}}backtocourse, block_bookchapter_pdf{{/str}}</button>
     </div>
 </form>
 
-<script>
-function toggleCheckboxes(button) {
-    var checkboxes = document.querySelectorAll('input[type="checkbox"]');
-
-    // Controlla se tutte le checkbox sono selezionate prima della modifica
-    var allCheckedBeforeClick = Array.from(checkboxes).every(checkbox => checkbox.checked);
-    
-    // Modifica lo stato delle checkbox in base allo stato determinato precedentemente
-    checkboxes.forEach(function(checkbox) {
-        checkbox.checked = !allCheckedBeforeClick;
+{{#js}}
+require(['block_bookchapter_pdf/toggleCheckboxes'], function(toggleCheckboxes) {
+    document.getElementById('toggle-checkboxes').addEventListener('click', function() {
+        toggleCheckboxes.toggleCheckboxes(this);
     });
-    
-    // Dopo aver cambiato lo stato delle checkbox, determina il loro nuovo stato complessivo
-    var allCheckedAfterClick = Array.from(checkboxes).every(checkbox => checkbox.checked);
-    
-    // Aggiorna il testo del pulsante in base al nuovo stato complessivo delle checkbox
-    button.textContent = allCheckedAfterClick ? 'Deselect all' : 'Select all';
-}
+});
+{{/js}}
 
-</script>

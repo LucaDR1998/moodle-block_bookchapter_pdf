@@ -44,8 +44,8 @@ if (!defined('PDF_MARGIN_BOTTOM')) {
     define('PDF_MARGIN_BOTTOM', 16);
 }
 
-$id = required_param('id', PARAM_INT); // ID del blocco
-$courseid = required_param('courseid', PARAM_INT); // ID del corso
+$id = required_param('id', PARAM_INT); // block ID
+$courseid = required_param('courseid', PARAM_INT);
 
 require_login($courseid);
 $context = context_course::instance($courseid);
@@ -60,111 +60,95 @@ $renderer = $PAGE->get_renderer('block_bookchapter_pdf');
 
 if (data_submitted()) {
 
-    // Ottieni tutti i capitoli selezionati e i loro gruppi basati sui prefissi "Lesson #"
-    $groupedchapters = process_and_find_chapterskey_for_course($COURSE->id, $DB);
-    $selectedlessons = array_filter((array)data_submitted(), function($key) {
-        return strpos($key, 'lesson_') === 0;
+    if (!confirm_sesskey()) {
+        throw new moodle_exception('invalidsesskey', 'error');
+    }
+    // check if there are any selected checkboxes
+    $selectedbooks = array_filter((array)data_submitted(), function($key) {
+        return strpos($key, 'book_') === 0; // reference to checkbox's prefix name 'book_'
     }, ARRAY_FILTER_USE_KEY);
+
+    if (empty($selectedbooks)) {
+        redirect($PAGE->url, get_string('nobookselected', 'block_bookchapter_pdf'), null, \core\output\notification::NOTIFY_WARNING);
+        return;
+    }
+    // Get all chapters grouped by book in the course
+    $groupedchapters = process_and_find_chapterskey_for_course($COURSE->id, $DB);
 
     $tempdir = make_temp_directory('exportpdf');
     $zip = new zipArchive();
     $zipfilename = tempnam($tempdir, 'exportpdf') . '.zip';
 
-    $imgtemp = __DIR__ . '/tempimgs';
+    // Create a temporary directory for images within moodledata
+    $imgtempdir = make_temp_directory('exportpdf_images');
 
     if ($zip->open($zipfilename, \ZipArchive::CREATE)) {
 
-        foreach ($groupedchapters as $lessonprefix => $lesson) {
+        foreach ($groupedchapters as $bookprefix => $book) {
 
-            if (array_key_exists('lesson_' . $lesson['id'], $selectedlessons)) {
+            // Export each book and its chapters directly
+            $mpdf = new Mpdf([
+                'margin_left' => PDF_MARGIN_LEFT,
+                'margin_right' => PDF_MARGIN_RIGHT,
+                'margin_top' => PDF_MARGIN_TOP,
+                'margin_bottom' => PDF_MARGIN_BOTTOM,
+                'margin_header' => 0,
+                'margin_footer' => 0
+            ]);
 
-                $mpdf = new \Mpdf\Mpdf([
-                    'margin_left' => PDF_MARGIN_LEFT,
-                    'margin_right' => PDF_MARGIN_RIGHT,
-                    'margin_top' => PDF_MARGIN_TOP,
-                    'margin_bottom' => PDF_MARGIN_BOTTOM,
-                    'margin_header' => 0,
-                    'margin_footer' => 0
-                ]);
+            $mpdf->SetFooter('|Page {PAGENO} / {nb}|');
 
-                $mpdf->SetFooter('|Page {PAGENO} / {nb}|');
+            $content = '';
+            $clean_html = '';
+            $bookid = $book['id'];
+            $imageurls = image_url($bookid);
+            $filemapping = get_file_mapping_by_filename($bookid);
+            $imagepath = '';
 
+            foreach ($book['chapters'] as $chapter) {
+                $content = $chapter->content;
 
-                $content = '';
-                $clean_html = '';
-                $bookid = $lesson['id'];
-                $imageurls = image_url($bookid);
-                $filemapping = get_file_mapping_by_filename($bookid);
-                $imagepath = '';
+                // Process the images in the chapter content
+                $content = preg_replace_callback(
+                    '/<img\s+([^>]*)src="(https?:\/\/[^"]+|@@PLUGINFILE@@\/([^"]*(?:%20)*[^"]*))"([^>]*)>/i',
+                    function ($matches) use ($filemapping, $imgtempdir) {
+                        // Check if the URL is external and download the image
+                        if (preg_match('/^https?:\/\//', $matches[2])) {
+                            $imageurl = $matches[2];                              
+                            $imagepath = download_image($imageurl, $imgtempdir);
+                            if ($imagepath && file_exists($imagepath) && filesize($imagepath) > 0) {
+                                return '<img ' . $matches[1] . 'src="' . $imagepath . '"' . $matches[4] . '>';
+                            } else {
+                                return '';
+                            }
+                        } 
+                        // Handle local files via @@PLUGINFILE@@
+                        $filename = urldecode($matches[3]);
+                        if (isset($filemapping[$filename])) {
+                            $newsrc = $filemapping[$filename][0];
+                            if (file_exists($newsrc) && filesize($newsrc) > 0) {
+                                return '<img ' . $matches[1] . 'src="' . $newsrc . '"' . $matches[4] . '>';
+                            } else {
+                                return '';
+                            }
+                        }
+                    },
+                    $content
+                );
 
-// // DEBUG
-//                 $imageurlsContent = "<h2>Image URLs</h2><pre>" . htmlspecialchars(print_r($imageurls, true)) . "</pre>";
-//                 // Preparazione del contenuto di $filemapping per l'HTML
-//                 $filemappingContent = "<h2>File Mapping</h2><pre>" . htmlspecialchars(print_r($filemapping, true)) . "</pre>";
-//                 // Concatenazione del contenuto in una singola stringa HTML
-//                 $htmlContent = $imageurlsContent . $filemappingContent;
-//                 // Percorso del file HTML a cui fare append
-//                 $filePath = 'output.html';
-//                 // Append del contenuto al file, creando il file se non esiste e acquisendo un lock esclusivo durante la scrittura
-//                 file_put_contents($filePath, $htmlContent, FILE_APPEND | LOCK_EX);
+                $content = '<h1>' . $chapter->title . '</h1>' . $content;
+                $cleanHtml = clean_html_for_pdf_export($content);
 
-                foreach ($lesson['chapters'] as $chapter) {
+                $mpdf->AddPage();
+                $mpdf->WriteHTML($cleanHtml);
+            }
 
-                    $content = $chapter->content;
-        
-                    $content = preg_replace_callback(
-                        // '/<img\s+([^>]*)src="(https?:\/\/[^"]+|@@PLUGINFILE@@\/([^"]+))"([^>]*)>/i',
-                        '/<img\s+([^>]*)src="(https?:\/\/[^"]+|@@PLUGINFILE@@\/([^"]*(?:%20)*[^"]*))"([^>]*)>/i',
-                        function ($matches) use ($filemapping, $imgtemp) {
-                            // Verifica se l'URL è esterno
-                            if (preg_match('/^https?:\/\//', $matches[2])) {
-                                $imageurl = $matches[2];                              
-                                // Verifica se l'URL è esterno e scarica l'immagine
-                                $imagepath = download_image($imageurl, $imgtemp);
-                                // Aggiungi un controllo per verificare se l'immagine esiste e è valida
-                                if ($imagepath && file_exists($imagepath) && filesize($imagepath) > 0) {
-                                    // Se l'immagine è stata scaricata, usa il percorso locale
-                                    return '<img ' . $matches[1] . 'src="' . $imagepath . '"' . $matches[4] . '>';
-                                } else {
-                                    return '';
-                                }
-                            } 
-                            // else {
-                                // Gestione dei file locali tramite @@PLUGINFILE@@
-                                $filename = urldecode($matches[3]); // Ottieni il nome del file dall'URL interno
-                                // $filename = rawurlencode($filename);
-                                if (isset($filemapping[$filename])) {
-                                    $newsrc = $filemapping[$filename][0]; // Prendi il primo percorso disponibile
-                                    // Ricostruisce il tag <img> mantenendo tutti gli attributi originali
-                                    // e sostituendo solo l'attributo src con il nuovo percorso
-                                    if (file_exists($newsrc) && filesize($newsrc) > 0) {
-                                        return '<img ' . $matches[1] . 'src="' . $newsrc . '"' . $matches[4] . '>';
-                                    } else {
-                                        return '';
-                                    }
-                                }
-                            // }
-                            // Se non viene trovata alcuna corrispondenza o il download fallisce, mantiene il tag <img> originale
-                            // return $matches[0];
-                        },
-                        $content
-                    );
-                    $content = '<h1>' . $chapter->title . '</h1>' . $content;
-                    // file_put_contents('content.html', $chapter->content);
-                    $cleanHtml = clean_html_for_pdf_export($content);
-                    // file_put_contents('cleanHtml.html', $cleanHtml);
-
-                    $mpdf->AddPage();
-                    $mpdf->WriteHTML($cleanHtml);
-                }
-
-                if (count($mpdf->pages) > 0) {
-                    $pdfcontent = $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
-                    $zip->addFromString(clean_filename($lessonprefix) . '.pdf', $pdfcontent);
-
-                }
+            if (count($mpdf->pages) > 0) {
+                $pdfcontent = $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
+                $zip->addFromString(clean_filename($bookprefix) . '.pdf', $pdfcontent);
             }
         }
+        
         $zip->close();
         header('Content-Type: application/zip');
         header('Content-Disposition: attachment; filename="exported_chapters.zip"');
@@ -172,25 +156,26 @@ if (data_submitted()) {
         unlink($zipfilename);
         exit;
     }
-    // Una volta completato il processo di aggiunta al ZIP, svuota la cartella tempimgs
-    $files = glob($imgtemp . '/*'); // Ottiene tutti i file nella directory delle immagini temporanee
+
+    // Clear the temporary image folder in moodledata
+    $files = glob($imgtempdir . '/*');
     foreach ($files as $file) {
         if (is_file($file)) {
-            unlink($file); // Elimina il file
+            unlink($file);
         }
     }
-        
+
 } else {
-    // Ottieni i capitoli raggruppati per prefissi "Lesson #" dal corso corrente
+    // Get all chapters grouped by book in the course
     $groupedchapters = process_and_find_chapterskey_for_course($COURSE->id, $DB);
     $booksdata = [];
     
-    foreach ($groupedchapters as $lessonprefix => $lesson) {
-        // Aggiungi un'intestazione di gruppo per ogni lezione, ma solo una volta per lezione
+    foreach ($groupedchapters as $bookprefix => $book) {
+        // Add header for each book
         $booksdata[] = [
             'type' => 'checkbox',
-            'name' => 'lesson_' . $lesson['id'],
-            'label' => format_string($lessonprefix),
+            'name' => 'book_' . $book['id'],
+            'label' => format_string($bookprefix),
             'checked' => '',
             'isGroupHeader' => true,
         ];
@@ -209,3 +194,4 @@ if (data_submitted()) {
     echo $renderer->render_export_form((object)$data);
     echo $OUTPUT->footer();
 }
+
