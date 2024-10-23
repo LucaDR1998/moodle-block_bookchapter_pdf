@@ -22,17 +22,15 @@
  */
 define([], function() {
     function toggleCheckboxes(button) {
-        var checkboxes = document.querySelectorAll('input[type="checkbox"]');
-
+        var checkboxSelector = M.util.get_string('checkboxselector', 'block_bookchapter_pdf');
+        var checkboxes = document.querySelectorAll(checkboxSelector);
         var allCheckedBeforeClick = Array.from(checkboxes).every(checkbox => checkbox.checked);
         checkboxes.forEach(function(checkbox) {
             checkbox.checked = !allCheckedBeforeClick;
         });
-
         var allCheckedAfterClick = Array.from(checkboxes).every(checkbox => checkbox.checked);
-        button.textContent = allCheckedAfterClick ? 'Deselect all' : 'Select all';
+        button.textContent = allCheckedAfterClick ? M.util.get_string('deselectall', 'block_bookchapter_pdf') : M.util.get_string('selectall', 'block_bookchapter_pdf');
     }
-
     return {
         toggleCheckboxes: toggleCheckboxes
     };
