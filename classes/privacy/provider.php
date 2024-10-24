@@ -1,6 +1,6 @@
 <?php
 // This file is part of Moodle - http://moodle.org/
-//
+// 
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -21,19 +21,16 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Privacy Subsystem implementation for block_bookchapter_pdf.
  *
- * This plugin does not store any personal user data but accesses data from the mod_book component.
+ * This plugin does not store any personal user data.
  */
-class provider implements \core_privacy\local\metadata\provider {
+class provider implements \core_privacy\local\request\null_provider {
 
     /**
-     * Returns metadata about the data that this plugin stores or accesses.
+     * Get the reason why no data is stored.
      *
-     * @param \core_privacy\local\metadata\collection $collection The collection to add items to.
-     * @return \core_privacy\local\metadata\collection The updated collection.
+     * @return  string
      */
-    public static function get_metadata(\core_privacy\local\metadata\collection $collection) : \core_privacy\local\metadata\collection {
-        // Indicate that the plugin accesses data from the mod_book component.
-        $collection->link_subsystem('mod_book', 'privacy:metadata:mod_book');
-        return $collection;
+    public static function get_reason() : string {
+        return 'privacy:metadata';
     }
 }

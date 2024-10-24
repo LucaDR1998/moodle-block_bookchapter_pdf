@@ -73,7 +73,7 @@ if (data_submitted()) {
         return;
     }
     // Get all chapters grouped by book in the course
-    $groupedchapters = process_and_find_chapterskey_for_course($COURSE->id, $DB);
+    $groupedchapters = block_bookchapter_pdf_process_and_find_chapterskey_for_course($COURSE->id, $DB);
 
     $tempdir = make_temp_directory('exportpdf');
     $zip = new zipArchive();
@@ -105,8 +105,8 @@ if (data_submitted()) {
             $content = '';
             $clean_html = '';
             $bookid = $book['id'];
-            $imageurls = image_url($bookid);
-            $filemapping = get_file_mapping_by_filename($bookid);
+            $imageurls = block_bookchapter_pdf_image_url($bookid);
+            $filemapping = block_bookchapter_pdf_get_file_mapping_by_filename($bookid);
             $imagepath = '';
 
             foreach ($book['chapters'] as $chapter) {
@@ -119,7 +119,7 @@ if (data_submitted()) {
                         // Check if the URL is external and download the image
                         if (preg_match('/^https?:\/\//', $matches[2])) {
                             $imageurl = $matches[2];                              
-                            $imagepath = download_image($imageurl, $imgtempdir);
+                            $imagepath = block_bookchapter_pdf_download_image($imageurl, $imgtempdir);
                             if ($imagepath && file_exists($imagepath) && filesize($imagepath) > 0) {
                                 return '<img ' . $matches[1] . 'src="' . $imagepath . '"' . $matches[4] . '>';
                             } else {
@@ -141,7 +141,7 @@ if (data_submitted()) {
                 );
 
                 $content = '<h1>' . $chapter->title . '</h1>' . $content;
-                $cleanHtml = clean_html_for_pdf_export($content);
+                $cleanHtml = block_bookchapter_pdf_clean_html_for_pdf_export($content);
 
                 $mpdf->AddPage();
                 $mpdf->WriteHTML($cleanHtml);
@@ -171,7 +171,7 @@ if (data_submitted()) {
 
 } else {
     // Get all chapters grouped by book in the course
-    $groupedchapters = process_and_find_chapterskey_for_course($COURSE->id, $DB);
+    $groupedchapters = block_bookchapter_pdf_process_and_find_chapterskey_for_course($COURSE->id, $DB);
     $booksdata = [];
     
     foreach ($groupedchapters as $bookprefix => $book) {

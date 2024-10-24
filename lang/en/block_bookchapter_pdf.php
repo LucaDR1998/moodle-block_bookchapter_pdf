@@ -43,7 +43,6 @@ $string['deselectall'] = 'Deselect all';
 $string['backtocourse'] = 'Back to course';
 $string['chapterprefix'] = 'Book Prefix';
 $string['chapterprefix_desc'] = 'Enter the prefix for books titles';
-$string['privacy:metadata:mod_book'] = 'This plugin accesses data from the mod_book module to export book chapters in PDF format.';
 $string['bookchapter_pdf:myaddinstance'] = 'Add Book Chapter PDF block to Dashboard';
 $string['nobookselected'] = 'Please select at least one book to export';
 $string['checkboxselector'] = 'input[type="checkbox"]';

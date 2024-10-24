@@ -41,7 +41,7 @@ require_once($CFG->libdir.'/pdflib.php');
  * @return array An associative array where each key is the book name and each value is an array containing the book ID and its chapters.
  *               Each chapter includes the ID, title, content, and subchapter status.
  */
-function process_and_find_chapterskey_for_course($courseid, moodle_database $DB) {
+function block_bookchapter_pdf_process_and_find_chapterskey_for_course($courseid, moodle_database $DB) {
 
     $chapterprefix = get_config('block_bookchapter_pdf', 'chapterprefix');
     $grouped = [];
@@ -89,7 +89,7 @@ function process_and_find_chapterskey_for_course($courseid, moodle_database $DB)
  * @param string $html The HTML content to be cleaned.
  * @return string The cleaned HTML content, ready for PDF export.
  */
-function clean_html_for_pdf_export($html) {
+function block_bookchapter_pdf_clean_html_for_pdf_export($html) {
     libxml_use_internal_errors(true);
     $dom = new DOMDocument();
     $dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
@@ -125,7 +125,7 @@ function clean_html_for_pdf_export($html) {
  * @param int $bookid The ID of the book.
  * @return array An associative array where keys are chapter IDs and values are arrays of image URLs.
  */
-function image_url($bookid) {
+function block_bookchapter_pdf_image_url($bookid) {
     global $DB, $CFG;
 
     $fs = get_file_storage();
@@ -162,7 +162,7 @@ function image_url($bookid) {
  * @param int $bookid The ID of the book.
  * @return array An associative array where keys are filenames and values are arrays of physical file paths.
  */
-function get_file_mapping_by_filename($bookid) {
+function block_bookchapter_pdf_get_file_mapping_by_filename($bookid) {
     global $CFG, $DB, $USER;
 
     // get context module for the book
@@ -202,7 +202,7 @@ function get_file_mapping_by_filename($bookid) {
  * @param string $tempdir The temporary directory where the image will be saved.
  * @return string|false The file path of the downloaded image if successful, false otherwise.
  */
-function download_image($url, $tempdir) {
+function block_bookchapter_pdf_download_image($url, $tempdir) {
     $filename = basename($url);
     $filepath = $tempdir . '/' . $filename;
     // Use file_get_contents and file_put_contents to download the image
