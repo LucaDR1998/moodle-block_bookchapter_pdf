@@ -22,16 +22,27 @@
  */
 define([], function() {
     function toggleCheckboxes(button) {
-        var checkboxSelector = M.util.get_string('checkboxselector', 'block_bookchapter_pdf');
-        var checkboxes = document.querySelectorAll(checkboxSelector);
-        var allCheckedBeforeClick = Array.from(checkboxes).every(checkbox => checkbox.checked);
-        checkboxes.forEach(function(checkbox) {
-            checkbox.checked = !allCheckedBeforeClick;
+        require(['core/str'], function(str) {
+            str.get_string('checkboxselector', 'block_bookchapter_pdf').then(function(checkboxSelector) {
+
+                var checkboxes = document.querySelectorAll(checkboxSelector);
+                var allCheckedBeforeClick = Array.from(checkboxes).every(checkbox => checkbox.checked);
+
+                checkboxes.forEach(function(checkbox) {
+                    checkbox.checked = !allCheckedBeforeClick;
+                });
+
+                var allCheckedAfterClick = Array.from(checkboxes).every(checkbox => checkbox.checked);
+
+                str.get_string(allCheckedAfterClick ? 'deselectall' : 'selectall', 'block_bookchapter_pdf').then(function(buttonText) {
+                    button.textContent = buttonText;
+                });
+            })
         });
-        var allCheckedAfterClick = Array.from(checkboxes).every(checkbox => checkbox.checked);
-        button.textContent = allCheckedAfterClick ? M.util.get_string('deselectall', 'block_bookchapter_pdf') : M.util.get_string('selectall', 'block_bookchapter_pdf');
     }
+
     return {
         toggleCheckboxes: toggleCheckboxes
     };
 });
+
