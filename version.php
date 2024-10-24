@@ -24,10 +24,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 $plugin->component = 'block_bookchapter_pdf';
-$plugin->version = 2024102301;
+$plugin->version = 2024102400;
 $plugin->requires = 2020061500; // Requires this Moodle version (3.9 or higher).
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v4.2';
+$plugin->release = 'v4.3';
 $plugin->dependencies = array(
     'mod_book' => 2020061500
 );
