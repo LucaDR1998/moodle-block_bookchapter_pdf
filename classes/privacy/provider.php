@@ -23,7 +23,7 @@ defined('MOODLE_INTERNAL') || die();
  *
  * This plugin does not store any personal user data.
  */
-class provider implements \core_privacy\local\request\null_provider {
+class provider implements \core_privacy\local\metadata\null_provider {
 
     /**
      * Get the reason why no data is stored.
